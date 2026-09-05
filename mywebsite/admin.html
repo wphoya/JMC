@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>상품 관리 시스템</title>
+    <title>상품 관리 시스템 (이미지 업로드형)</title>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { margin: 0; padding: 20px; background-color: #f9f9f9; display: flex; gap: 40px; }
@@ -17,7 +17,8 @@
         /* 폼 스타일 */
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; color: #555; }
-        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        .form-group input[type="file"] { padding: 5px; }
         
         .btn { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 4px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
         .btn:hover { background: #0056b3; }
@@ -29,10 +30,10 @@
         .btn-delete { background: #dc3545; color: white; border: none; padding: 5px 8px; border-radius: 3px; cursor: pointer; }
         .btn-delete:hover { background: #bd2130; }
 
-        /* 사용자 제공 상품 카드 스타일 (원문 스타일 유지 및 최적화) */
+        /* 사용자 제공 상품 카드 스타일 */
         .product-card { margin-bottom: 40px; border: 1px solid #eee; padding: 20px; max-width: 400px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); background: #fff; border-radius: 4px; }
         .product-card a { text-decoration: none; color: #333; }
-        .product-image { text-align: center; height: 200px; display: flex; align-items: center; justify-content: center; background: #fafafa; border-radius: 4px; }
+        .product-image { text-align: center; height: 200px; display: flex; align-items: center; justify-content: center; background: #fafafa; border-radius: 4px; overflow: hidden; }
         .product-image img { max-width: 100%; max-height: 100%; height: auto; object-fit: contain; }
         .product-info { margin-top: 15px; }
         .product-info h3 { font-size: 18px; margin: 5px 0; line-height: 1.4; }
@@ -59,15 +60,13 @@
                 <input type="number" id="prodPrice" placeholder="예: 29990" required>
             </div>
             <div class="form-group">
-                <label for="prodImage">상품 이미지 샘플 선택</label>
-                <select id="prodImage">
-                    <option value="../image/image_BlnjdD.png">메디필 랩핑팩 이미지</option>
-                    <option value="../image/image_0CuCkt.png">바세린 마스크팩 이미지</option>
-                </select>
+                <!-- 드롭다운 대신 파일 업로드 input으로 변경 -->
+                <label for="prodImageFile">상품 이미지 업로드</label>
+                <input type="file" id="prodImageFile" accept="image/*" required>
             </div>
             <button type="submit" class="btn">상품 등록하기</button>
         </form>
-
+ 
         <!-- 등록된 상품 목록 제어 테이블 -->
         <table class="product-table">
             <thead>
@@ -78,7 +77,7 @@
                 </tr>
             </thead>
             <tbody id="adminTableBody">
-                <!-- 등록 리스트가 자바스크립트로 주입됨 -->
+                <!-- 리스트 주입 영역 -->
             </tbody>
         </table>
     </div>
@@ -87,19 +86,19 @@
     <div class="view-section">
         <h2>실시간 상품 출력 화면</h2>
         <div id="productPageContainer">
-            <!-- 사용자가 요청한 카드 레이아웃 형태로 실시간 렌더링됨 -->
+            <!-- 상품 카드 레이아웃 실시간 렌더링 영역 -->
         </div>
     </div>
 
     <script>
-        // 초기 데이터 세팅 (기존 샘플 상품 2종 포함)
+        // 기본 셈플 상품 (초기 주소는 외부 데모 이미지 링크로 대체하여 테스트를 용이하게 함)
         const defaultProducts = [
-            { id: 1, brand: 'MEDIPEEL', title: '[MEDIPEEL] 메디필 콜라겐 랩핑 마스크팩 100ml X 2 (브러쉬 포함)', price: 29990, image: '../image/image_BlnjdD.png', link: 'product_detail_01.html' },
-            { id: 2, brand: 'VASELINE', title: '[VASELINE] 바세린 시트 마스크팩 3종 세트 (10매 X 3팩, 총 30매)', price: 22990, image: '../image/image_0CuCkt.png', link: 'product_detail_02.html' }
+            { id: 1, brand: 'MEDIPEEL', title: '[MEDIPEEL] 메디필 콜라겐 랩핑 마스크팩 100ml X 2 (브러쉬 포함)', price: 29990, image: 'https://unsplash.com', link: 'product_detail_01.html' },
+            { id: 2, brand: 'VASELINE', title: '[VASELINE] 바세린 시트 마스크팩 3종 세트 (10매 X 3팩, 총 30매)', price: 22990, image: 'https://unsplash.com', link: 'product_detail_02.html' }
         ];
 
-        // 데이터 로드 (로컬스토리지 우선, 없을 시 기본값)
-        let products = JSON.parse(localStorage.getItem('myProducts')) || defaultProducts;
+        // 이미지 파일 데이터의 특성상 로컬스토리지가 아닌 메모리 기반 배열로 관리
+        let products = [...defaultProducts];
 
         const productForm = document.getElementById('productForm');
         const adminTableBody = document.getElementById('adminTableBody');
@@ -110,17 +109,13 @@
             return Number(num).toLocaleString() + '원';
         }
 
-        // 화면 새로고침 및 렌더링 담당 함수
+        // 화면 렌더링 함수
         function render() {
-            localStorage.setItem('myProducts', JSON.stringify(products));
-            
-            // 1. 관리자 테이블 업데이트
             adminTableBody.innerHTML = '';
-            // 2. 쇼핑몰 뷰페이지 업데이트
             productPageContainer.innerHTML = '';
 
             products.forEach((product, index) => {
-                // 관리자단 리스트 추가
+                // 관리자 테이블 생성
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><strong>[${product.brand}]</strong> ${product.title.substring(0,15)}...</td>
@@ -129,10 +124,8 @@
                 `;
                 adminTableBody.appendChild(tr);
 
-                // 사용자단 카드 생성 (제공해주신 HTML 구조 및 인라인 스타일 결합)
+                // 사용자 화면 카드 생성
                 const cardWrapper = document.createElement('div');
-                
-                // 마지막 상품 뒤에는 구분선(hr)을 붙이지 않기 위한 조건 처리
                 const showSeparator = index < products.length - 1;
 
                 cardWrapper.innerHTML = `
@@ -160,33 +153,43 @@
             const brand = document.getElementById('prodBrand').value;
             const title = document.getElementById('prodTitle').value;
             const price = parseInt(document.getElementById('prodPrice').value);
-            const image = document.getElementById('prodImage').value;
-            const id = Date.now(); // 고유 ID 생성용 타임스탬프
+            const imageFile = document.getElementById('prodImageFile').files[0];
 
-            // 새 상품 객체 생성
+            if (!imageFile) return;
+
+            // 브라우저 메모리에 업로드된 임시 이미지 URL 생성
+            const imageUrl = URL.createObjectURL(imageFile);
+            const id = Date.now();
+
             const newProduct = {
                 id: id,
                 brand: brand,
                 title: title,
                 price: price,
-                image: image,
-                link: '#' // 실제 개발 시 상세페이지 경로 세팅 가능
+                image: imageUrl, // 변환된 blob URL 주소 저장
+                link: '#'
             };
 
             products.push(newProduct);
             render();
-            productForm.reset(); // 입력창 초기화
+            productForm.reset(); // 입력 폼 초기화
         });
 
         // 상품 삭제 함수
         window.deleteProduct = function(id) {
             if(confirm("이 상품을 삭제하시겠습니까?")) {
+                // 메모리 누수 방지를 위해 해제 가능한 blob URL 객체가 있다면 해제 프로세스 권장
+                const target = products.find(p => p.id === id);
+                if (target && target.image.startsWith('blob:')) {
+                    URL.revokeObjectURL(target.image);
+                }
+                
                 products = products.filter(p => p.id !== id);
                 render();
             }
         };
 
-        // 최초 로드 실행
+        // 최초 실행
         render();
     </script>
 </body>
