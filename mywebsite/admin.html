@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>상품 관리 시스템</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { margin: 0; padding: 20px; background-color: #f9f9f9; display: flex; gap: 40px; }
+        
+        /* 대시보드 레이아웃 */
+        .admin-section { flex: 1; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); max-width: 500px; height: fit-content; }
+        .view-section { flex: 1; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); max-width: 480px; }
+        
+        h2 { margin-top: 0; border-bottom: 2px solid #333; padding-bottom: 10px; font-size: 22px; color: #222; }
+        
+        /* 폼 스타일 */
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; color: #555; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        
+        .btn { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 4px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        .btn:hover { background: #0056b3; }
+        
+        /* 관리자 테이블 스타일 */
+        .product-table { width: 100%; border-collapse: collapse; margin-top: 25px; font-size: 13px; }
+        .product-table th, .product-table td { padding: 10px; border: 1px solid #eee; text-align: left; }
+        .product-table th { background: #f4f4f4; }
+        .btn-delete { background: #dc3545; color: white; border: none; padding: 5px 8px; border-radius: 3px; cursor: pointer; }
+        .btn-delete:hover { background: #bd2130; }
+
+        /* 사용자 제공 상품 카드 스타일 (원문 스타일 유지 및 최적화) */
+        .product-card { margin-bottom: 40px; border: 1px solid #eee; padding: 20px; max-width: 400px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); background: #fff; border-radius: 4px; }
+        .product-card a { text-decoration: none; color: #333; }
+        .product-image { text-align: center; height: 200px; display: flex; align-items: center; justify-content: center; background: #fafafa; border-radius: 4px; }
+        .product-image img { max-width: 100%; max-height: 100%; height: auto; object-fit: contain; }
+        .product-info { margin-top: 15px; }
+        .product-info h3 { font-size: 18px; margin: 5px 0; line-height: 1.4; }
+        .product-info .price { font-size: 20px; font-weight: bold; color: #e44d26; margin: 5px 0; }
+        .separator { border: 0; height: 1px; background: #ccc; margin: 40px 0; max-width: 440px; }
+    </style>
+</head>
+<body>
+
+    <!-- 1. 관리자 등록 폼 섹션 -->
+    <div class="admin-section">
+        <h2>상품 등록 관리자</h2>
+        <form id="productForm">
+            <div class="form-group">
+                <label for="prodBrand">브랜드명</label>
+                <input type="text" id="prodBrand" placeholder="예: MEDIPEEL" required>
+            </div>
+            <div class="form-group">
+                <label for="prodTitle">상품명</label>
+                <input type="text" id="prodTitle" placeholder="예: 메디필 콜라겐 랩핑 마스크팩 100ml" required>
+            </div>
+            <div class="form-group">
+                <label for="prodPrice">판매 가격 (원)</label>
+                <input type="number" id="prodPrice" placeholder="예: 29990" required>
+            </div>
+            <div class="form-group">
+                <label for="prodImage">상품 이미지 샘플 선택</label>
+                <select id="prodImage">
+                    <option value="../image/image_BlnjdD.png">메디필 랩핑팩 이미지</option>
+                    <option value="../image/image_0CuCkt.png">바세린 마스크팩 이미지</option>
+                </select>
+            </div>
+            <button type="submit" class="btn">상품 등록하기</button>
+        </form>
+
+        <!-- 등록된 상품 목록 제어 테이블 -->
+        <table class="product-table">
+            <thead>
+                <tr>
+                    <th>상품명</th>
+                    <th>가격</th>
+                    <th>관리</th>
+                </tr>
+            </thead>
+            <tbody id="adminTableBody">
+                <!-- 등록 리스트가 자바스크립트로 주입됨 -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 2. 사용자 상품 노출 페이지 뷰 섹션 -->
+    <div class="view-section">
+        <h2>실시간 상품 출력 화면</h2>
+        <div id="productPageContainer">
+            <!-- 사용자가 요청한 카드 레이아웃 형태로 실시간 렌더링됨 -->
+        </div>
+    </div>
+
+    <script>
+        // 초기 데이터 세팅 (기존 샘플 상품 2종 포함)
+        const defaultProducts = [
+            { id: 1, brand: 'MEDIPEEL', title: '[MEDIPEEL] 메디필 콜라겐 랩핑 마스크팩 100ml X 2 (브러쉬 포함)', price: 29990, image: '../image/image_BlnjdD.png', link: 'product_detail_01.html' },
+            { id: 2, brand: 'VASELINE', title: '[VASELINE] 바세린 시트 마스크팩 3종 세트 (10매 X 3팩, 총 30매)', price: 22990, image: '../image/image_0CuCkt.png', link: 'product_detail_02.html' }
+        ];
+
+        // 데이터 로드 (로컬스토리지 우선, 없을 시 기본값)
+        let products = JSON.parse(localStorage.getItem('myProducts')) || defaultProducts;
+
+        const productForm = document.getElementById('productForm');
+        const adminTableBody = document.getElementById('adminTableBody');
+        const productPageContainer = document.getElementById('productPageContainer');
+
+        // 가격 포맷 함수 (1,000 단위 콤마 추가)
+        function formatPrice(num) {
+            return Number(num).toLocaleString() + '원';
+        }
+
+        // 화면 새로고침 및 렌더링 담당 함수
+        function render() {
+            localStorage.setItem('myProducts', JSON.stringify(products));
+            
+            // 1. 관리자 테이블 업데이트
+            adminTableBody.innerHTML = '';
+            // 2. 쇼핑몰 뷰페이지 업데이트
+            productPageContainer.innerHTML = '';
+
+            products.forEach((product, index) => {
+                // 관리자단 리스트 추가
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>[${product.brand}]</strong> ${product.title.substring(0,15)}...</td>
+                    <td>${formatPrice(product.price)}</td>
+                    <td><button class="btn-delete" onclick="deleteProduct(${product.id})">삭제</button></td>
+                `;
+                adminTableBody.appendChild(tr);
+
+                // 사용자단 카드 생성 (제공해주신 HTML 구조 및 인라인 스타일 결합)
+                const cardWrapper = document.createElement('div');
+                
+                // 마지막 상품 뒤에는 구분선(hr)을 붙이지 않기 위한 조건 처리
+                const showSeparator = index < products.length - 1;
+
+                cardWrapper.innerHTML = `
+                    <div class="product-card">
+                        <a href="${product.link}">
+                            <div class="product-image">
+                                <img src="${product.image}" alt="${product.title}">
+                            </div>
+                            <div class="product-info">
+                                <h3>[${product.brand}] ${product.title}</h3>
+                                <p class="price">${formatPrice(product.price)}</p>
+                            </div>
+                        </a>
+                    </div>
+                    ${showSeparator ? '<hr class="separator">' : ''}
+                `;
+                productPageContainer.appendChild(cardWrapper);
+            });
+        }
+
+        // 상품 등록 이벤트 핸들러
+        productForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const brand = document.getElementById('prodBrand').value;
+            const title = document.getElementById('prodTitle').value;
+            const price = parseInt(document.getElementById('prodPrice').value);
+            const image = document.getElementById('prodImage').value;
+            const id = Date.now(); // 고유 ID 생성용 타임스탬프
+
+            // 새 상품 객체 생성
+            const newProduct = {
+                id: id,
+                brand: brand,
+                title: title,
+                price: price,
+                image: image,
+                link: '#' // 실제 개발 시 상세페이지 경로 세팅 가능
+            };
+
+            products.push(newProduct);
+            render();
+            productForm.reset(); // 입력창 초기화
+        });
+
+        // 상품 삭제 함수
+        window.deleteProduct = function(id) {
+            if(confirm("이 상품을 삭제하시겠습니까?")) {
+                products = products.filter(p => p.id !== id);
+                render();
+            }
+        };
+
+        // 최초 로드 실행
+        render();
+    </script>
+</body>
+</html>
