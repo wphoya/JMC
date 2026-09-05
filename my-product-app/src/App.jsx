@@ -4,12 +4,10 @@ import AdminPage from './pages/AdminPage';
 
 function App() {
   return (
-    <BrowserRouter>
+    /* 💡 핵심: 깃허브 배포 주소의 하위 경로명을 basename으로 명시해 줍니다. */
+    <BrowserRouter basename="/JMC/my-product-app">
       <Routes>
-        {/* http://localhost:5173/ -> 사용자 쇼핑몰 화면 */}
         <Route path="/" element={<UserPage />} />
-        
-        {/* http://localhost:5173/admin -> 관리자 등록 화면 */}
         <Route path="/admin" element={<AdminPage />} />
       </Routes>
     </BrowserRouter>
