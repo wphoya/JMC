@@ -1,22 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState,  useRef } from 'react';
 
 export default function ProductManager() {
-  // 1. 상태(State) 정의
+  // 1. 상태(State) 정의 (복수형 setProducts 로 정확히 선언)
   const [products, setProducts] = useState([]);
   const [brand, setBrand] = useState('');
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
   const [image, setImage] = useState('');
   const fileInputRef = useRef(null);
-
-  // 2. 컴포넌트 마운트 시 LocalStorage에서 데이터 불러오기
-  useEffect(() => {
-    const savedData = localStorage.getItem('react_products');
-    if (savedData) {
-      setProducts(JSON.parse(savedData));
-    }
-  }, []);
-
+  
   // 3. 천 단위 콤마 포맷팅 헬퍼 함수
   const formatPrice = (value) => {
     return Number(value).toLocaleString() + '원';

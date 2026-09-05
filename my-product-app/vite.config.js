@@ -1,11 +1,8 @@
-import react, { reactCompilerPreset } from '@vitejs/plugin-react'
-import babel from '@rolldown/plugin-babel'
 import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react' // 👈 올바른 패키지명으로 수정됨
+import tailwindcss from '@tailwindcss/vite'
 
-// https://vite.dev/config/
+// https://vite.dev
 export default defineConfig({
-  plugins: [
-    react(),
-    babel({ presets: [reactCompilerPreset()] })
-  ],
+  plugins: [react(), tailwindcss()],
 })
