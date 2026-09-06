@@ -6,4 +6,7 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   base: "/JMC/my-product-app/", 
   plugins: [react(), tailwindcss()],
+  build: {
+    outDir: 'dist', // 결과물이 dist 폴더로 명확히 가도록 고정
+  }
 })
