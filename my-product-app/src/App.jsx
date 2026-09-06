@@ -1,16 +1,17 @@
-import { HashRouter, Routes, Route } from 'react-router-dom'; // 💡 BrowserRouter 대신 HashRouter 사용
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import UserPage from './pages/UserPage';
 import AdminPage from './pages/AdminPage';
 
 function App() {
   return (
-    /* HashRouter를 쓰면 깃허브 하위 경로 꼬임 문제(basename)가 원천 차단됩니다. */
     <HashRouter>
       <Routes>
-        {/* 일반 주소: https://github.io */}
+        {/* 주소창 매핑 다중 예외 처리 */}
         <Route path="/" element={<UserPage />} />
+        {/* 💡 혹시라도 경로가 밀려 들어오는 경우를 대비한 안전 장치 */}
+        <Route path="*" element={<UserPage />} /> 
         
-        {/* 관리자 주소: https://github.io#/admin */}
+        {/* 관리자 페이지 진입 경로 */}
         <Route path="/admin" element={<AdminPage />} />
       </Routes>
     </HashRouter>
