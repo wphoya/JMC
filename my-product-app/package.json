@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "homepage": "https://wphoya.github.io/JMC/my-product-app/", 
   "scripts": {
     "dev": "vite",
     "build": "vite build",
