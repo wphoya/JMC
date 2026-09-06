@@ -3,10 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://github.io",
+  "homepage": "https://wphoya.github.io",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && cp dist/index.html dist/404.html", 
     "lint": "eslint .",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist" 
