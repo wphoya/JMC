@@ -183,93 +183,173 @@
 
   <script>
     // ▼ 1단계에서 복사한 구글 스프레드시트 '웹에 게시(CSV)' 주소를 아래 따옴표 안에 붙여넣으세요.
-    const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/e/2PACX-1vSNR1JpfQd9_izcj3a4G8kdPhKKqvHYmxYfy_ffmiCRYxjjC31MFU4hyG2ozNzHK_YJmRSkA9npHNZZ/pub?output=csv
-`;
+    const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSNR1JpfQd9_izcj3a4G8kdPhKKqvHYmxYfy_ffmiCRYxjjC31MFU4hyG2ozNzHK_YJmRSkA9npHNZZ/pub?gid=0&single=true&output=csv";
 
-    const gridEl = document.getElementById("product-grid");
-    const statusEl = document.getElementById("status");
-    let products = [];
+   let gridEl = null;
+  let statusEl = null;
+  let products = [];
 
-    function formatPrice(value) {
-      if (!value) return "";
-      const num = Number(String(value).replace(/[^0-9.-]+/g, ""));
-      return isNaN(num) || num === 0 ? value : num.toLocaleString("ko-KR") + "원";
-    }
+  // 외부 라이브러리 없이 CSV 텍스트를 직접 객체 배열로 변환하는 함수
+  function parseCSV(csvText) {
+    const rows = [];
+    let currentRow = [];
+    let currentVal = "";
+    let inQuotes = false;
 
-    function loadProducts() {
-      Papa.parse(SHEET_CSV_URL, {
-        download: true,
-        header: true,
-        skipEmptyLines: true,
-        complete: function(results) {
-          products = results.data.slice(0, 30); // 최대 30개 제한
-          if (products.length === 0) {
-            statusEl.textContent = "등록된 상품이 없습니다.";
-            return;
-          }
-          statusEl.style.display = "none";
-          renderGrid();
-        },
-        error: function() {
-          statusEl.textContent = "데이터를 불러오지 못했습니다. 구글 시트 웹에 게시 URL을 확인해 주세요.";
+    for (let i = 0; i < csvText.length; i++) {
+      const char = csvText[i];
+      const nextChar = csvText[i + 1];
+
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          currentVal += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
         }
+      } else if (char === "," && !inQuotes) {
+        currentRow.push(currentVal.trim());
+        currentVal = "";
+      } else if ((char === "\r" || char === "\n") && !inQuotes) {
+        if (char === "\r" && nextChar === "\n") i++;
+        currentRow.push(currentVal.trim());
+        if (currentRow.some(cell => cell !== "")) {
+          rows.push(currentRow);
+        }
+        currentRow = [];
+        currentVal = "";
+      } else {
+        currentVal += char;
+      }
+    }
+
+    if (currentVal !== "" || currentRow.length > 0) {
+      currentRow.push(currentVal.trim());
+      if (currentRow.some(cell => cell !== "")) {
+        rows.push(currentRow);
+      }
+    }
+
+    if (rows.length < 2) return [];
+
+    const headers = rows[0];
+    return rows.slice(1).map(row => {
+      const obj = {};
+      headers.forEach((header, index) => {
+        obj[header] = row[index] || "";
       });
-    }
+      return obj;
+    });
+  }
 
-    function renderGrid() {
-      gridEl.innerHTML = products.map((item, idx) => {
-        const images = [item["이미지1"], item["이미지2"], item["이미지3"], item["이미지4"], item["이미지5"]].filter(Boolean);
-        const thumb = images[0] || "https://placeholder.com";
-        return `
-          <div class="card" onclick="openModal(${idx})">
-            <div class="card-img-wrap">
-              <img src="${thumb}" alt="${item["상품명"] || ""}" loading="lazy" />
-            </div>
-            <div class="card-body">
-              <div class="card-title">${item["상품명"] || "제목 없음"}</div>
-              <div class="card-price">${formatPrice(item["가격"])}</div>
-              <div class="card-desc">${item["설명"] || ""}</div>
-            </div>
-          </div>
-        `;
-      }).join("");
-    }
+  function formatPrice(value) {
+    if (!value) return "";
+    const num = Number(String(value).replace(/[^0-9.-]+/g, ""));
+    return isNaN(num) || num === 0 ? value : num.toLocaleString("ko-KR") + "원";
+  }
 
-    function openModal(idx) {
-      const item = products[idx];
+  function escapeHtml(text) {
+    return String(text || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  async function loadProducts() {
+    try {
+      const response = await fetch(SHEET_CSV_URL);
+      if (!response.ok) {
+        throw new Error("HTTP 오류 상태: " + response.status);
+      }
+      const csvText = await response.text();
+      const parsedData = parseCSV(csvText);
+
+      products = parsedData.slice(0, 30); // 최대 30개 제한
+      if (products.length === 0) {
+        if (statusEl) statusEl.textContent = "등록된 상품이 없습니다.";
+        return;
+      }
+
+      if (statusEl) statusEl.style.display = "none";
+      renderGrid();
+    } catch (err) {
+      console.error("CSV 로드 오류:", err);
+      if (statusEl) {
+        statusEl.textContent = "데이터를 불러오지 못했습니다. 구글 시트 '웹에 게시' 설정을 확인해 주세요.";
+      }
+    }
+  }
+
+  function renderGrid() {
+    if (!gridEl) return;
+    gridEl.innerHTML = products.map((item, idx) => {
       const images = [item["이미지1"], item["이미지2"], item["이미지3"], item["이미지4"], item["이미지5"]].filter(Boolean);
-      const validImages = images.length > 0 ? images : ["https://placeholder.com"];
+      const thumb = images[0] || "https://placehold.co";
+      return `
+        <div class="card" onclick="openModal(${idx})">
+          <div class="card-img-wrap">
+            <img src="${escapeHtml(thumb)}" alt="${escapeHtml(item["상품명"])}" loading="lazy" />
+          </div>
+          <div class="card-body">
+            <div class="card-title">${escapeHtml(item["상품명"] || "제목 없음")}</div>
+            <div class="card-price">${escapeHtml(formatPrice(item["가격"]))}</div>
+            <div class="card-desc">${escapeHtml(item["설명"])}</div>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
 
-      document.getElementById("modal-title").textContent = item["상품명"] || "";
-      document.getElementById("modal-price").textContent = formatPrice(item["가격"]);
-      document.getElementById("modal-desc").textContent = item["설명"] || "";
+  function openModal(idx) {
+    const item = products[idx];
+    if (!item) return;
 
-      const mainImg = document.getElementById("modal-main-img");
-      const thumbsWrap = document.getElementById("modal-thumbs");
-      mainImg.src = validImages[0];
+    const images = [item["이미지1"], item["이미지2"], item["이미지3"], item["이미지4"], item["이미지5"]].filter(Boolean);
+    const validImages = images.length > 0 ? images : ["https://placehold.co"];
 
-      thumbsWrap.innerHTML = validImages.map((src, i) => `
-        <img src="${src}" class="${i === 0 ? "active" : ""}" onclick="selectImage('${src}', this)" />
-      `).join("");
+    document.getElementById("modal-title").textContent = item["상품명"] || "";
+    document.getElementById("modal-price").textContent = formatPrice(item["가격"]);
+    document.getElementById("modal-desc").textContent = item["설명"] || "";
 
-      document.getElementById("modal-backdrop").classList.add("active");
-    }
+    const mainImg = document.getElementById("modal-main-img");
+    const thumbsWrap = document.getElementById("modal-thumbs");
+    mainImg.src = validImages[0];
 
-    function selectImage(src, el) {
-      document.getElementById("modal-main-img").src = src;
-      document.querySelectorAll("#modal-thumbs img").forEach(img => img.classList.remove("active"));
-      el.classList.add("active");
-    }
+    thumbsWrap.innerHTML = "";
+    validImages.forEach((src, i) => {
+      const img = document.createElement("img");
+      img.src = src;
+      if (i === 0) img.classList.add("active");
+      img.onclick = function() {
+        selectImage(src, img);
+      };
+      thumbsWrap.appendChild(img);
+    });
 
-    function closeModal(e) {
-      if (e.target.id === "modal-backdrop") forceCloseModal();
-    }
+    document.getElementById("modal-backdrop").classList.add("active");
+  }
 
-    function forceCloseModal() {
-      document.getElementById("modal-backdrop").classList.remove("active");
-    }
+  function selectImage(src, el) {
+    document.getElementById("modal-main-img").src = src;
+    document.querySelectorAll("#modal-thumbs img").forEach(img => img.classList.remove("active"));
+    el.classList.add("active");
+  }
 
+  function closeModal(e) {
+    if (e.target.id === "modal-backdrop") forceCloseModal();
+  }
+
+  function forceCloseModal() {
+    document.getElementById("modal-backdrop").classList.remove("active");
+  }
+
+  window.addEventListener("DOMContentLoaded", function() {
+    gridEl = document.getElementById("product-grid");
+    statusEl = document.getElementById("status");
     loadProducts();
-  </script>
+  });
+</script>
 </body>
 </html>
